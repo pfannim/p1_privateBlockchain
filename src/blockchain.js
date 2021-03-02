@@ -64,11 +64,11 @@ class Blockchain {
     let self = this;
     return new Promise(async (resolve, reject) => {
       try {
+        // Assign previous block hash only if this.height is at least 0
         if (self.height >= 0) {
           block.previousBlockHash = self.chain[self.height].hash;
         }
-        block.height = ++self.height;
-        // block.time = new Date().getTime().toString().slice(0, -3);
+        block.height = ++self.height; //Increment chain height and store as block height
         block.time = new Date().getTime().toString().slice(0, -3);
         block.hash = SHA256(JSON.stringify(block)).toString();
         self.chain.push(block);
@@ -123,20 +123,28 @@ class Blockchain {
         let currentTime = parseInt(
           new Date().getTime().toString().slice(0, -3)
         );
+        console.log(`Time passed: ${(currentTime - messageTime) / 60}`);
+        // Throw error if elapsed time is greater than five minutes
         if ((currentTime - messageTime) / 60 >= 5) {
           throw new Error("Elapsed time is larger than 5 minutes!");
         }
+        // Throw error if bitcoinMessage.verify returns false
         if (!bitcoinMessage.verify(message, address, signature)) {
           throw new Error("Message could not be verified!");
         }
+        // Create body data for the block with all the input and validated data
         const body = {
           owner: address,
+          message: message,
+          signature: signature,
           star: star,
         };
+        // Create new block, add it to the chain and resolve
         let block = new BlockClass.Block(body);
-        this._addBlock(block);
+        self._addBlock(block);
         resolve(block);
       } catch (err) {
+        // Catch any thrown or other error
         reject(new Error(err.message));
       }
     });
@@ -154,7 +162,6 @@ class Blockchain {
       console.log(hash);
       let block = self.chain.filter((element) => element.hash === hash)[0];
       if (block) {
-        // console.log(block.hash);
         resolve(block);
       } else {
         resolve(null);
@@ -190,15 +197,26 @@ class Blockchain {
     let stars = [];
     console.log(address);
     return new Promise((resolve, reject) => {
-      self.chain.forEach((block) => {
-        block.getBData().then((body) => {
-          console.log(body);
-          if (body.owner === address) {
-            stars.push(body);
-          }
+      try {
+        self.chain.forEach((block) => {
+          // Iterate through chain of blocks
+          block.getBData().then((body) => {
+            // Consume promise with body data
+            console.log(body);
+            // Check if star is owned by provided address, if yes add to stars array
+            if (body.owner === address) {
+              const starObj = {
+                owner: body.owner,
+                star: body.star,
+              };
+              stars.push(starObj);
+            }
+          });
         });
-      });
-      resolve(stars);
+        resolve(stars);
+      } catch (err) {
+        reject(new Error(err.message));
+      }
     });
   }
 
@@ -214,15 +232,17 @@ class Blockchain {
     return new Promise(async (resolve, reject) => {
       try {
         self.chain.forEach(async (block, index) => {
-          const isValid = await block.validate();
+          // Iterate through chain of blocks
+          const isValid = await block.validate(); // Consume promise
           if (!isValid) {
             errorLog.push(new Error(`Block ${index} is not valid`));
           }
+          // Check if block index (height) is larger than 0
+          // If yes, assign results from comparison of hashes, else return true (for genesis block)
           const isConnected =
             index > 0
               ? block.previousBlockHash === self.chain[block.height - 1].hash
               : true;
-          console.log(`${index}:  ${isConnected}`);
           if (!isConnected) {
             errorLog.push(
               new Error(
