@@ -1,37 +1,55 @@
 /**
+ *                 ApplicationServer
+ *             (Do not change this code)
+ * Require Modules to setup the REST Api
+ * - `express` Express.js is a Web Framework
+ * - `morgan` Isn't required but help with debugging and logging
+ * - `body-parser` This module allows to parse the body of the post request into a JSON
+ */
+const express = require("express");
+const morgan = require("morgan");
+const bodyParser = require("body-parser");
+/**
  * Require the Blockchain class. This allow us to have only one instance of the class.
  */
 const BlockChain = require("./src/blockchain.js");
-const BlockClass = require("./src/block.js");
 
-let blockchain = new BlockChain.Blockchain();
-blockchain.initializeChain();
-let block = new BlockClass.Block({
-  data: "This is the second block of the chain!",
-});
-blockchain
-  ._addBlock(block)
-  .then((block) => {
-    // block.time = String(+block.time + 1);
-    block.previousBlockHash = block.previousBlockHash.slice(0, -1);
-    blockchain.validateChain().then((log) => console.log(log));
-    // console.log(block.hash);
-    // console.log(block.validate());
-    // console.log(block.hash);
-    // console.log(block.getBData());
-    // let hash = block.hash;
-    // console.log(hash);
-    // blockchain.getBlockByHash(hash).then((sameBlock) => console.log(sameBlock));
-  })
-  .catch((err) => console.log(err.message));
+class ApplicationServer {
+  constructor() {
+    //Express application object
+    this.app = express();
+    //Blockchain class object
+    this.blockchain = new BlockChain.Blockchain();
+    //Method that initialized the express framework.
+    this.initExpress();
+    //Method that initialized middleware modules
+    this.initExpressMiddleWare();
+    //Method that initialized the controllers where you defined the endpoints
+    this.initControllers();
+    //Method that run the express application.
+    this.start();
+  }
 
-console.log(blockchain.chain);
+  initExpress() {
+    this.app.set("port", 8000);
+  }
 
-let star = {
-  dec: "28",
-  ra: "2828",
-  story: "this is the star",
-};
-// let message = blockchain.requestMessageOwnershipVerification(
-//   "2NECYtTRK26syUA7gKcfBtjgB9D3D1HwSb6"
-// );
+  initExpressMiddleWare() {
+    this.app.use(morgan("dev"));
+    this.app.use(bodyParser.urlencoded({ extended: true }));
+    this.app.use(bodyParser.json());
+  }
+
+  initControllers() {
+    require("./BlockchainController.js")(this.app, this.blockchain);
+  }
+
+  start() {
+    let self = this;
+    this.app.listen(this.app.get("port"), () => {
+      console.log(`Server Listening for port: ${self.app.get("port")}`);
+    });
+  }
+}
+
+new ApplicationServer();
