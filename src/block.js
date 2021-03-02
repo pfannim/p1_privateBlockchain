@@ -34,18 +34,19 @@ class Block {
    *  5. Resolve true or false depending if it is valid or not.
    *  Note: to access the class values inside a Promise code you need to create an auxiliary value `let self = this;`
    */
+  // !!!!!!!! REQUEST do not overwrite hash of block in chain
   validate() {
     let self = this;
     return new Promise((resolve, reject) => {
       // Save in auxiliary variable the current block hash
-      let hash = self.hash;
+      let currentHash = self.hash;
       // Recalculate the hash of the Block
       self.hash = null;
-      self.hash = SHA256(JSON.stringify(self)).toString();
+      let newHash = SHA256(JSON.stringify(self)).toString();
+      self.hash = currentHash;
       // Comparing if the hashes changed
-      if (self.hash !== hash) {
+      if (currentHash !== newHash) {
         // Returning the Block is not valid
-        self.hash = hash;
         resolve(false);
       } else {
         // Returning the Block is valid
@@ -73,7 +74,7 @@ class Block {
           resolve(body); // Resolve with the data if the object isn't the Genesis block
         }
       } catch (err) {
-        reject(new Error(`Either genesis block requested or ${err.message}.`));
+        reject(new Error(`${err.message}.`));
       }
     });
   }

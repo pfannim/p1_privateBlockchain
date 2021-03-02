@@ -60,6 +60,7 @@ class Blockchain {
    * Note: the symbol `_` in the method name indicates in the javascript convention
    * that this method is a private method.
    */
+  // !!!!!!!! REQUEST validate chain before adding block
   _addBlock(block) {
     let self = this;
     return new Promise(async (resolve, reject) => {
@@ -71,8 +72,13 @@ class Blockchain {
         block.height = ++self.height; //Increment chain height and store as block height
         block.time = new Date().getTime().toString().slice(0, -3);
         block.hash = SHA256(JSON.stringify(block)).toString();
-        self.chain.push(block);
-        resolve(block);
+        let errorLog = await self.validateChain();
+        if (errorLog.length === 0 || block.height === 0) {
+          self.chain.push(block);
+          resolve(block);
+        } else {
+          throw new Error("Chain is defective!");
+        }
       } catch (err) {
         reject(`An error occured during execution: ${err.message}`);
       }
