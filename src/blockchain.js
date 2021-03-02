@@ -123,7 +123,6 @@ class Blockchain {
         let currentTime = parseInt(
           new Date().getTime().toString().slice(0, -3)
         );
-        console.log(`Time passed: ${(currentTime - messageTime) / 60}`);
         // Throw error if elapsed time is greater than five minutes
         if ((currentTime - messageTime) / 60 >= 5) {
           throw new Error("Elapsed time is larger than 5 minutes!");
@@ -159,7 +158,6 @@ class Blockchain {
   getBlockByHash(hash) {
     let self = this;
     return new Promise((resolve, reject) => {
-      console.log(hash);
       let block = self.chain.filter((element) => element.hash === hash)[0];
       if (block) {
         resolve(block);
@@ -195,14 +193,12 @@ class Blockchain {
   getStarsByWalletAddress(address) {
     let self = this;
     let stars = [];
-    console.log(address);
     return new Promise((resolve, reject) => {
       try {
         self.chain.forEach((block) => {
           // Iterate through chain of blocks
           block.getBData().then((body) => {
             // Consume promise with body data
-            console.log(body);
             // Check if star is owned by provided address, if yes add to stars array
             if (body.owner === address) {
               const starObj = {
